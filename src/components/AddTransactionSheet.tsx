@@ -73,12 +73,12 @@ export function AddTransactionSheet({ open, onOpenChange }: AddTransactionSheetP
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
-        <SheetHeader className="pb-4">
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl flex flex-col">
+        <SheetHeader className="pb-4 flex-shrink-0">
           <SheetTitle className="text-center text-xl">Add Transaction</SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-6 overflow-y-auto pb-8">
+        <div className="space-y-6 overflow-y-auto flex-1 pb-safe-bottom-4">
           {/* Type Toggle */}
           <div className="flex gap-2 p-1 bg-muted rounded-xl">
             <button
