@@ -4,13 +4,25 @@ import { TransactionList } from '@/components/TransactionList';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useSettings } from '@/hooks/useSettings';
 import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
 export default function HomePage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const { transactions, isLoading } = useTransactions();
+  const { settings } = useSettings();
+
+  const greeting = getGreeting();
+  const userName = settings?.user_name;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -19,7 +31,9 @@ export default function HomePage() {
         <div className="flex items-center justify-between pt-4">
           <div>
             <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE')}</p>
-            <h1 className="text-2xl font-bold text-foreground">{format(new Date(), 'MMMM d')}</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              {greeting}{userName ? `, ${userName}` : ''}
+            </h1>
           </div>
           <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
             <span className="text-lg">💰</span>

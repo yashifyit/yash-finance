@@ -106,6 +106,48 @@ export type Database = {
           },
         ]
       }
+      savings_goals: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          current_amount: number
+          deadline: string | null
+          device_id: string
+          icon: string | null
+          id: string
+          is_completed: boolean | null
+          name: string
+          target_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          current_amount?: number
+          deadline?: string | null
+          device_id: string
+          icon?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name: string
+          target_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          current_amount?: number
+          deadline?: string | null
+          device_id?: string
+          icon?: string | null
+          id?: string
+          is_completed?: boolean | null
+          name?: string
+          target_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           created_at: string | null
@@ -116,6 +158,9 @@ export type Database = {
           id: string
           monthly_budget: number | null
           updated_at: string | null
+          user_age: number | null
+          user_name: string | null
+          user_occupation: string | null
         }
         Insert: {
           created_at?: string | null
@@ -126,6 +171,9 @@ export type Database = {
           id?: string
           monthly_budget?: number | null
           updated_at?: string | null
+          user_age?: number | null
+          user_name?: string | null
+          user_occupation?: string | null
         }
         Update: {
           created_at?: string | null
@@ -136,6 +184,9 @@ export type Database = {
           id?: string
           monthly_budget?: number | null
           updated_at?: string | null
+          user_age?: number | null
+          user_name?: string | null
+          user_occupation?: string | null
         }
         Relationships: []
       }
