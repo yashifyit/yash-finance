@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useSettings } from '@/hooks/useSettings';
 import { User, Pencil } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { profileSchema, validateInput } from '@/lib/validations';
 
 export function UserProfileSection() {
   const { settings, updateSettings, isUpdating } = useSettings();
@@ -22,11 +23,19 @@ export function UserProfileSection() {
   };
 
   const handleSave = () => {
-    updateSettings({
+    const profileData = {
       user_name: name.trim() || null,
       user_age: age ? parseInt(age) : null,
       user_occupation: occupation.trim() || null,
-    });
+    };
+
+    const validation = validateInput(profileSchema, profileData);
+    if (validation.success === false) {
+      toast({ title: validation.error, variant: 'destructive' });
+      return;
+    }
+
+    updateSettings(profileData);
     toast({ title: 'Profile updated!' });
     setShowEditSheet(false);
   };
@@ -83,6 +92,7 @@ export function UserProfileSection() {
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                maxLength={100}
                 className="mt-2"
               />
             </div>
@@ -92,6 +102,8 @@ export function UserProfileSection() {
               <Input
                 type="number"
                 placeholder="25"
+                min="0"
+                max="150"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 className="mt-2"
@@ -104,6 +116,7 @@ export function UserProfileSection() {
                 placeholder="Software Engineer"
                 value={occupation}
                 onChange={(e) => setOccupation(e.target.value)}
+                maxLength={100}
                 className="mt-2"
               />
             </div>

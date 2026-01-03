@@ -8,6 +8,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { Target, Plus, Trash2, PiggyBank } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { savingsGoalSchema, validateInput } from '@/lib/validations';
 
 const GOAL_COLORS = [
   '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
@@ -28,20 +29,23 @@ export function SavingsGoalsSection() {
   const [newGoalColor, setNewGoalColor] = useState('#3B82F6');
 
   const handleAddGoal = () => {
-    if (!newGoalName.trim() || !newGoalTarget) {
-      toast({ title: 'Please fill in name and target amount', variant: 'destructive' });
-      return;
-    }
-
-    addGoal({
+    const goalData = {
       name: newGoalName.trim(),
-      target_amount: parseFloat(newGoalTarget),
+      target_amount: parseFloat(newGoalTarget) || 0,
       current_amount: 0,
       deadline: newGoalDeadline || null,
       color: newGoalColor,
       icon: 'target',
       is_completed: false,
-    }, {
+    };
+
+    const validation = validateInput(savingsGoalSchema, goalData);
+    if (validation.success === false) {
+      toast({ title: validation.error, variant: 'destructive' });
+      return;
+    }
+
+    addGoal(goalData, {
       onSuccess: () => {
         toast({ title: 'Goal created!' });
         setNewGoalName('');
@@ -55,7 +59,13 @@ export function SavingsGoalsSection() {
   const handleAddMoney = () => {
     if (!selectedGoalId || !addMoneyAmount) return;
     
-    addToGoal({ id: selectedGoalId, amount: parseFloat(addMoneyAmount) }, {
+    const amount = parseFloat(addMoneyAmount);
+    if (isNaN(amount) || amount <= 0 || amount > 10000000) {
+      toast({ title: 'Please enter a valid amount (max 10,000,000)', variant: 'destructive' });
+      return;
+    }
+    
+    addToGoal({ id: selectedGoalId, amount }, {
       onSuccess: () => {
         toast({ title: 'Money added to goal!' });
         setAddMoneyAmount('');
@@ -156,6 +166,7 @@ export function SavingsGoalsSection() {
                 placeholder="e.g., Emergency Fund"
                 value={newGoalName}
                 onChange={(e) => setNewGoalName(e.target.value)}
+                maxLength={100}
                 className="mt-2"
               />
             </div>
@@ -169,6 +180,8 @@ export function SavingsGoalsSection() {
                 <Input
                   type="number"
                   placeholder="50000"
+                  min="1"
+                  max="10000000"
                   value={newGoalTarget}
                   onChange={(e) => setNewGoalTarget(e.target.value)}
                   className="pl-8"
@@ -230,6 +243,8 @@ export function SavingsGoalsSection() {
                 <Input
                   type="number"
                   placeholder="1000"
+                  min="0.01"
+                  max="10000000"
                   value={addMoneyAmount}
                   onChange={(e) => setAddMoneyAmount(e.target.value)}
                   className="pl-8"

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { transactionSchema, validateInput } from '@/lib/validations';
 
 interface AddTransactionSheetProps {
   open: boolean;
@@ -32,20 +33,25 @@ export function AddTransactionSheet({ open, onOpenChange }: AddTransactionSheetP
   const currencySymbol = settings?.currency_symbol || '₹';
 
   const handleSubmit = () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast({ title: 'Please enter a valid amount', variant: 'destructive' });
-      return;
-    }
-
-    addTransaction({
+    const parsedAmount = parseFloat(amount);
+    
+    const transactionData = {
       type,
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       category_id: categoryId,
       date: format(date, 'yyyy-MM-dd'),
       note: note.trim() || null,
       is_recurring: false,
       recurring_id: null,
-    }, {
+    };
+
+    const validation = validateInput(transactionSchema, transactionData);
+    if (validation.success === false) {
+      toast({ title: validation.error, variant: 'destructive' });
+      return;
+    }
+
+    addTransaction(transactionData, {
       onSuccess: () => {
         toast({ title: `${type === 'expense' ? 'Expense' : 'Income'} added` });
         resetForm();
@@ -110,6 +116,9 @@ export function AddTransactionSheet({ open, onOpenChange }: AddTransactionSheetP
                 type="number"
                 inputMode="decimal"
                 placeholder="0"
+                min="0.01"
+                max="10000000"
+                step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="pl-12 text-4xl font-semibold h-20 border-0 bg-muted rounded-xl focus-visible:ring-2"
@@ -202,6 +211,7 @@ export function AddTransactionSheet({ open, onOpenChange }: AddTransactionSheetP
               placeholder="Add a note..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              maxLength={500}
               className="resize-none h-20 rounded-xl bg-muted border-0"
             />
           </div>

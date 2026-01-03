@@ -31,22 +31,21 @@ export const categorySchema = z.object({
 
 // Profile validation
 export const profileSchema = z.object({
-  user_name: z.string().max(100, 'Name must be less than 100 characters').trim().nullable().optional(),
+  user_name: z.string().max(100, 'Name must be less than 100 characters').nullable().optional(),
   user_age: z.number()
     .int('Age must be a whole number')
     .min(0, 'Age must be positive')
     .max(150, 'Invalid age')
     .nullable()
     .optional(),
-  user_occupation: z.string().max(100, 'Occupation must be less than 100 characters').trim().nullable().optional(),
+  user_occupation: z.string().max(100, 'Occupation must be less than 100 characters').nullable().optional(),
 });
 
 // Savings goal validation
 export const savingsGoalSchema = z.object({
   name: z.string()
     .min(1, 'Name is required')
-    .max(100, 'Name must be less than 100 characters')
-    .trim(),
+    .max(100, 'Name must be less than 100 characters'),
   target_amount: z.number()
     .positive('Target amount must be positive')
     .max(10000000, 'Target must be less than 10,000,000'),
