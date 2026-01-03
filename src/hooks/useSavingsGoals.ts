@@ -1,47 +1,46 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from './useDeviceId';
+import { useAuth } from './useAuth';
 
 export interface SavingsGoal {
   id: string;
-  device_id: string;
+  user_id: string;
   name: string;
   target_amount: number;
   current_amount: number;
   deadline: string | null;
-  color: string;
-  icon: string;
+  icon: string | null;
+  color: string | null;
   is_completed: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export function useSavingsGoals() {
   const queryClient = useQueryClient();
-  const deviceId = getDeviceId();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: goals = [], isLoading } = useQuery({
-    queryKey: ['savings_goals', deviceId],
+    queryKey: ['savings_goals', userId],
     queryFn: async () => {
-      if (!deviceId) return [];
+      if (!userId) return [];
       
       const { data, error } = await supabase
         .from('savings_goals')
         .select('*')
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as SavingsGoal[];
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
 
   const addGoal = useMutation({
-    mutationFn: async (goal: Omit<SavingsGoal, 'id' | 'device_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (goal: Omit<SavingsGoal, 'id' | 'user_id' | 'current_amount' | 'is_completed'>) => {
       const { data, error } = await supabase
         .from('savings_goals')
-        .insert({ ...goal, device_id: deviceId })
+        .insert({ ...goal, user_id: userId, device_id: userId } as any)
         .select()
         .single();
       
@@ -49,7 +48,7 @@ export function useSavingsGoals() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savings_goals', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['savings_goals', userId] });
     },
   });
 
@@ -59,7 +58,7 @@ export function useSavingsGoals() {
         .from('savings_goals')
         .update(updates)
         .eq('id', id)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .select()
         .single();
       
@@ -67,7 +66,7 @@ export function useSavingsGoals() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savings_goals', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['savings_goals', userId] });
     },
   });
 
@@ -77,19 +76,19 @@ export function useSavingsGoals() {
         .from('savings_goals')
         .delete()
         .eq('id', id)
-        .eq('device_id', deviceId);
+        .eq('user_id', userId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savings_goals', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['savings_goals', userId] });
     },
   });
 
   const addToGoal = useMutation({
     mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
-      const goal = goals.find(g => g.id === id && g.device_id === deviceId);
-      if (!goal) throw new Error('Goal not found or access denied');
+      const goal = goals.find(g => g.id === id);
+      if (!goal) throw new Error('Goal not found');
       
       const newAmount = goal.current_amount + amount;
       const isCompleted = newAmount >= goal.target_amount;
@@ -101,7 +100,7 @@ export function useSavingsGoals() {
           is_completed: isCompleted
         })
         .eq('id', id)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .select()
         .single();
       
@@ -109,7 +108,7 @@ export function useSavingsGoals() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savings_goals', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['savings_goals', userId] });
     },
   });
 

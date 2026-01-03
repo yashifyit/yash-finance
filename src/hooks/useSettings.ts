@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from './useDeviceId';
+import { useAuth } from './useAuth';
 
 export interface Settings {
   id: string;
-  device_id: string;
+  user_id: string;
   currency: string;
   currency_symbol: string;
   monthly_budget: number;
@@ -16,17 +16,18 @@ export interface Settings {
 
 export function useSettings() {
   const queryClient = useQueryClient();
-  const deviceId = getDeviceId();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ['settings', deviceId],
+    queryKey: ['settings', userId],
     queryFn: async () => {
-      if (!deviceId) return null;
+      if (!userId) return null;
       
       const { data, error } = await supabase
         .from('settings')
         .select('*')
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .maybeSingle();
       
       if (error) throw error;
@@ -35,7 +36,7 @@ export function useSettings() {
       if (!data) {
         const { data: newSettings, error: insertError } = await supabase
           .from('settings')
-          .insert({ device_id: deviceId })
+          .insert({ user_id: userId, device_id: userId } as any)
           .select()
           .single();
         
@@ -45,7 +46,7 @@ export function useSettings() {
       
       return data as Settings;
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
 
   const updateSettings = useMutation({
@@ -53,7 +54,7 @@ export function useSettings() {
       const { data, error } = await supabase
         .from('settings')
         .update(updates)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .select()
         .single();
       
@@ -61,7 +62,7 @@ export function useSettings() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['settings', userId] });
     },
   });
 

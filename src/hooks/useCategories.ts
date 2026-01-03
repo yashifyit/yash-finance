@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from './useDeviceId';
+import { useAuth } from './useAuth';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 
 export interface Category {
   id: string;
-  device_id: string;
+  user_id: string;
   name: string;
   icon: string;
   color: string | null;
@@ -15,17 +15,18 @@ export interface Category {
 
 export function useCategories() {
   const queryClient = useQueryClient();
-  const deviceId = getDeviceId();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: categories = [], isLoading } = useQuery({
-    queryKey: ['categories', deviceId],
+    queryKey: ['categories', userId],
     queryFn: async () => {
-      if (!deviceId) return [];
+      if (!userId) return [];
       
       const { data, error } = await supabase
         .from('categories')
         .select('*')
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: true });
       
       if (error) throw error;
@@ -34,13 +35,14 @@ export function useCategories() {
       if (data.length === 0) {
         const defaultCats = DEFAULT_CATEGORIES.map(cat => ({
           ...cat,
-          device_id: deviceId,
+          user_id: userId,
+          device_id: userId,
           is_default: true,
         }));
         
         const { data: newCategories, error: insertError } = await supabase
           .from('categories')
-          .insert(defaultCats)
+          .insert(defaultCats as any)
           .select();
         
         if (insertError) throw insertError;
@@ -49,14 +51,14 @@ export function useCategories() {
       
       return data as Category[];
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
 
   const addCategory = useMutation({
-    mutationFn: async (category: Omit<Category, 'id' | 'device_id' | 'is_default'>) => {
+    mutationFn: async (category: Omit<Category, 'id' | 'user_id' | 'is_default'>) => {
       const { data, error } = await supabase
         .from('categories')
-        .insert({ ...category, device_id: deviceId })
+        .insert({ ...category, user_id: userId, device_id: userId } as any)
         .select()
         .single();
       
@@ -64,7 +66,7 @@ export function useCategories() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['categories', userId] });
     },
   });
 
@@ -74,7 +76,7 @@ export function useCategories() {
         .from('categories')
         .update(updates)
         .eq('id', id)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .select()
         .single();
       
@@ -82,7 +84,7 @@ export function useCategories() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['categories', userId] });
     },
   });
 
@@ -92,12 +94,12 @@ export function useCategories() {
         .from('categories')
         .delete()
         .eq('id', id)
-        .eq('device_id', deviceId);
+        .eq('user_id', userId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['categories', userId] });
     },
   });
 
