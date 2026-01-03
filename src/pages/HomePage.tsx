@@ -3,7 +3,7 @@ import { BalanceCard } from '@/components/BalanceCard';
 import { TransactionList } from '@/components/TransactionList';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactions, TransactionWithCategory } from '@/hooks/useTransactions';
 import { useSettings } from '@/hooks/useSettings';
 import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
@@ -18,6 +18,7 @@ function getGreeting(): string {
 
 export default function HomePage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionWithCategory | null>(null);
   const { transactions, isLoading } = useTransactions();
   const { settings } = useSettings();
 
@@ -64,18 +65,29 @@ export default function HomePage() {
               isLoading={isLoading}
               limit={5}
               showDate
+              onTransactionClick={(transaction) => {
+                setEditingTransaction(transaction);
+                setShowAddSheet(true);
+              }}
             />
           </div>
         </section>
       </main>
 
       {/* Bottom Navigation */}
-      <BottomNav onAddClick={() => setShowAddSheet(true)} />
+      <BottomNav onAddClick={() => {
+        setEditingTransaction(null);
+        setShowAddSheet(true);
+      }} />
 
-      {/* Add Transaction Sheet */}
+      {/* Add/Edit Transaction Sheet */}
       <AddTransactionSheet 
         open={showAddSheet} 
-        onOpenChange={setShowAddSheet} 
+        onOpenChange={(open) => {
+          setShowAddSheet(open);
+          if (!open) setEditingTransaction(null);
+        }}
+        editTransaction={editingTransaction}
       />
     </div>
   );
