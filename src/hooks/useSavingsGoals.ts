@@ -59,6 +59,7 @@ export function useSavingsGoals() {
         .from('savings_goals')
         .update(updates)
         .eq('id', id)
+        .eq('device_id', deviceId)
         .select()
         .single();
       
@@ -75,7 +76,8 @@ export function useSavingsGoals() {
       const { error } = await supabase
         .from('savings_goals')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('device_id', deviceId);
       
       if (error) throw error;
     },
@@ -86,8 +88,8 @@ export function useSavingsGoals() {
 
   const addToGoal = useMutation({
     mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
-      const goal = goals.find(g => g.id === id);
-      if (!goal) throw new Error('Goal not found');
+      const goal = goals.find(g => g.id === id && g.device_id === deviceId);
+      if (!goal) throw new Error('Goal not found or access denied');
       
       const newAmount = goal.current_amount + amount;
       const isCompleted = newAmount >= goal.target_amount;
@@ -99,6 +101,7 @@ export function useSavingsGoals() {
           is_completed: isCompleted
         })
         .eq('id', id)
+        .eq('device_id', deviceId)
         .select()
         .single();
       
