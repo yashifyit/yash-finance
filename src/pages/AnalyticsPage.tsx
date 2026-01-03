@@ -3,7 +3,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { SpendingDonut } from '@/components/SpendingDonut';
 import { TransactionList } from '@/components/TransactionList';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactions, TransactionWithCategory } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useSettings } from '@/hooks/useSettings';
 import { format, subMonths, addMonths } from 'date-fns';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 export default function AnalyticsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionWithCategory | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
   const { transactions, isLoading, totals } = useTransactions(selectedMonth);
@@ -128,13 +129,27 @@ export default function AnalyticsPage() {
               transactions={transactions}
               isLoading={isLoading}
               showDate
+              onTransactionClick={(transaction) => {
+                setEditingTransaction(transaction);
+                setShowAddSheet(true);
+              }}
             />
           </div>
         </section>
       </main>
 
-      <BottomNav onAddClick={() => setShowAddSheet(true)} />
-      <AddTransactionSheet open={showAddSheet} onOpenChange={setShowAddSheet} />
+      <BottomNav onAddClick={() => {
+        setEditingTransaction(null);
+        setShowAddSheet(true);
+      }} />
+      <AddTransactionSheet 
+        open={showAddSheet} 
+        onOpenChange={(open) => {
+          setShowAddSheet(open);
+          if (!open) setEditingTransaction(null);
+        }}
+        editTransaction={editingTransaction}
+      />
     </div>
   );
 }
