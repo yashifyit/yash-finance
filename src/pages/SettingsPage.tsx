@@ -10,8 +10,9 @@ import { useSettings } from '@/hooks/useSettings';
 import { useCategories } from '@/hooks/useCategories';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAuth } from '@/hooks/useAuth';
 import { CURRENCIES, getIconComponent, CATEGORY_ICONS } from '@/lib/constants';
-import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight } from 'lucide-react';
+import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -31,6 +32,12 @@ export default function SettingsPage() {
   const { categories, addCategory, deleteCategory, isAdding: isAddingCategory } = useCategories();
   const { recurringTransactions, deleteRecurring } = useRecurringTransactions();
   const { transactions } = useTransactions();
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({ title: 'Signed out successfully' });
+  };
 
   // Handle dark mode toggle
   useEffect(() => {
@@ -273,6 +280,24 @@ export default function SettingsPage() {
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
+        </section>
+
+        {/* Account */}
+        <section className="bg-card rounded-2xl shadow-premium overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-semibold text-foreground">Account</h2>
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-muted-foreground mb-3">{user?.email}</p>
+            <Button
+              variant="destructive"
+              onClick={handleSignOut}
+              className="w-full"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </section>
       </main>
 

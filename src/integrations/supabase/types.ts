@@ -25,6 +25,7 @@ export type Database = {
           is_default: boolean | null
           name: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           budget_limit?: number | null
@@ -36,6 +37,7 @@ export type Database = {
           is_default?: boolean | null
           name: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           budget_limit?: number | null
@@ -47,6 +49,7 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -65,6 +68,7 @@ export type Database = {
           start_date: string
           type: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           amount: number
@@ -80,6 +84,7 @@ export type Database = {
           start_date?: string
           type: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           amount?: number
@@ -95,6 +100,7 @@ export type Database = {
           start_date?: string
           type?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -119,6 +125,7 @@ export type Database = {
           name: string
           target_amount: number
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -132,6 +139,7 @@ export type Database = {
           name: string
           target_amount: number
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -145,6 +153,7 @@ export type Database = {
           name?: string
           target_amount?: number
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -159,6 +168,7 @@ export type Database = {
           monthly_budget: number | null
           updated_at: string | null
           user_age: number | null
+          user_id: string | null
           user_name: string | null
           user_occupation: string | null
         }
@@ -172,6 +182,7 @@ export type Database = {
           monthly_budget?: number | null
           updated_at?: string | null
           user_age?: number | null
+          user_id?: string | null
           user_name?: string | null
           user_occupation?: string | null
         }
@@ -185,6 +196,7 @@ export type Database = {
           monthly_budget?: number | null
           updated_at?: string | null
           user_age?: number | null
+          user_id?: string | null
           user_name?: string | null
           user_occupation?: string | null
         }
@@ -203,6 +215,7 @@ export type Database = {
           recurring_id: string | null
           type: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           amount: number
@@ -216,6 +229,7 @@ export type Database = {
           recurring_id?: string | null
           type: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           amount?: number
@@ -229,6 +243,7 @@ export type Database = {
           recurring_id?: string | null
           type?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

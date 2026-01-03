@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from './useDeviceId';
+import { useAuth } from './useAuth';
 
 export interface RecurringTransaction {
   id: string;
-  device_id: string;
+  user_id: string;
   type: 'expense' | 'income';
   amount: number;
   category_id: string | null;
@@ -12,8 +12,8 @@ export interface RecurringTransaction {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   start_date: string;
   next_due_date: string;
-  is_active: boolean;
   last_processed_date: string | null;
+  is_active: boolean;
 }
 
 export interface RecurringTransactionWithCategory extends RecurringTransaction {
@@ -27,12 +27,13 @@ export interface RecurringTransactionWithCategory extends RecurringTransaction {
 
 export function useRecurringTransactions() {
   const queryClient = useQueryClient();
-  const deviceId = getDeviceId();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const { data: recurringTransactions = [], isLoading } = useQuery({
-    queryKey: ['recurring_transactions', deviceId],
+    queryKey: ['recurring_transactions', userId],
     queryFn: async () => {
-      if (!deviceId) return [];
+      if (!userId) return [];
       
       const { data, error } = await supabase
         .from('recurring_transactions')
@@ -45,28 +46,36 @@ export function useRecurringTransactions() {
             color
           )
         `)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .order('next_due_date', { ascending: true });
       
       if (error) throw error;
       return data as RecurringTransactionWithCategory[];
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
 
   const addRecurring = useMutation({
-    mutationFn: async (transaction: Omit<RecurringTransaction, 'id' | 'device_id' | 'last_processed_date'>) => {
+    mutationFn: async (transaction: Omit<RecurringTransaction, 'id' | 'user_id' | 'last_processed_date' | 'is_active'>) => {
       const { data, error } = await supabase
         .from('recurring_transactions')
-        .insert({ ...transaction, device_id: deviceId })
-        .select()
+        .insert({ ...transaction, user_id: userId, device_id: userId } as any)
+        .select(`
+          *,
+          categories (
+            id,
+            name,
+            icon,
+            color
+          )
+        `)
         .single();
       
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring_transactions', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['recurring_transactions', userId] });
     },
   });
 
@@ -76,7 +85,7 @@ export function useRecurringTransactions() {
         .from('recurring_transactions')
         .update(updates)
         .eq('id', id)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .select()
         .single();
       
@@ -84,7 +93,7 @@ export function useRecurringTransactions() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring_transactions', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['recurring_transactions', userId] });
     },
   });
 
@@ -94,12 +103,12 @@ export function useRecurringTransactions() {
         .from('recurring_transactions')
         .delete()
         .eq('id', id)
-        .eq('device_id', deviceId);
+        .eq('user_id', userId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recurring_transactions', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['recurring_transactions', userId] });
     },
   });
 

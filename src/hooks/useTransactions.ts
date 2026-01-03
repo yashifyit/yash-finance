@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from './useDeviceId';
+import { useAuth } from './useAuth';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 
 export interface Transaction {
   id: string;
-  device_id: string;
+  user_id: string;
   type: 'expense' | 'income';
   amount: number;
   category_id: string | null;
@@ -27,13 +27,14 @@ export interface TransactionWithCategory extends Transaction {
 
 export function useTransactions(month?: Date) {
   const queryClient = useQueryClient();
-  const deviceId = getDeviceId();
+  const { user } = useAuth();
+  const userId = user?.id;
   const targetMonth = month || new Date();
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['transactions', deviceId, format(targetMonth, 'yyyy-MM')],
+    queryKey: ['transactions', userId, format(targetMonth, 'yyyy-MM')],
     queryFn: async () => {
-      if (!deviceId) return [];
+      if (!userId) return [];
       
       const start = format(startOfMonth(targetMonth), 'yyyy-MM-dd');
       const end = format(endOfMonth(targetMonth), 'yyyy-MM-dd');
@@ -49,7 +50,7 @@ export function useTransactions(month?: Date) {
             color
           )
         `)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .gte('date', start)
         .lte('date', end)
         .order('date', { ascending: false })
@@ -58,14 +59,14 @@ export function useTransactions(month?: Date) {
       if (error) throw error;
       return data as TransactionWithCategory[];
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
 
   const addTransaction = useMutation({
-    mutationFn: async (transaction: Omit<Transaction, 'id' | 'device_id' | 'created_at'>) => {
+    mutationFn: async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('transactions')
-        .insert({ ...transaction, device_id: deviceId })
+        .insert({ ...transaction, user_id: userId, device_id: userId } as any)
         .select(`
           *,
           categories (
@@ -81,7 +82,7 @@ export function useTransactions(month?: Date) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', userId] });
     },
   });
 
@@ -91,7 +92,7 @@ export function useTransactions(month?: Date) {
         .from('transactions')
         .update(updates)
         .eq('id', id)
-        .eq('device_id', deviceId)
+        .eq('user_id', userId)
         .select()
         .single();
       
@@ -99,7 +100,7 @@ export function useTransactions(month?: Date) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', userId] });
     },
   });
 
@@ -109,12 +110,12 @@ export function useTransactions(month?: Date) {
         .from('transactions')
         .delete()
         .eq('id', id)
-        .eq('device_id', deviceId);
+        .eq('user_id', userId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', deviceId] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', userId] });
     },
   });
 
