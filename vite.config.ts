@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "Expense Tracker",
-        short_name: "Expenses",
+        name: "BALANCIO",
+        short_name: "BALANCIO",
         description: "Premium minimalist expense tracking app",
         theme_color: "#000000",
         background_color: "#fafafa",
