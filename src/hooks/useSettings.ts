@@ -9,6 +9,9 @@ export interface Settings {
   currency_symbol: string;
   monthly_budget: number;
   dark_mode: boolean;
+  user_name: string | null;
+  user_age: number | null;
+  user_occupation: string | null;
 }
 
 export function useSettings() {

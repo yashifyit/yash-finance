@@ -11,10 +11,12 @@ import { useCategories } from '@/hooks/useCategories';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useTransactions } from '@/hooks/useTransactions';
 import { CURRENCIES, getIconComponent, CATEGORY_ICONS } from '@/lib/constants';
-import { Moon, Download, RefreshCw, Tag, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { UserProfileSection } from '@/components/UserProfileSection';
+import { SavingsGoalsSection } from '@/components/SavingsGoalsSection';
 
 export default function SettingsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -102,6 +104,12 @@ export default function SettingsPage() {
       </header>
 
       <main className="px-5 space-y-6">
+        {/* User Profile */}
+        <UserProfileSection />
+
+        {/* Savings Goals */}
+        <SavingsGoalsSection />
+
         {/* Appearance */}
         <section className="bg-card rounded-2xl shadow-premium overflow-hidden">
           <div className="p-4 border-b border-border">
