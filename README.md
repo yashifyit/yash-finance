@@ -23,20 +23,3 @@ A modern, mobile-first **Progressive Web App (PWA)** designed for seamless perso
 * **Animation:** Framer Motion
 * **Deployment:** Netlify / Vercel
 
-
-# Step 1: Clone the repository
-git clone (https://github.com/yashifyit/yash-finance)
-
-# Step 2: Navigate to the project directory
-cd /yashifyit/yash-finance
-
-# Step 3: Install dependencies
-npm i
-
-# Step 4: Configure Environment Variables
-# Create a .env file in the root and add your Supabase keys:
-# VITE_SUPABASE_URL=your_url_here
-# VITE_SUPABASE_ANON_KEY=your_key_here
-
-# Step 5: Start the development server
-npm run dev
