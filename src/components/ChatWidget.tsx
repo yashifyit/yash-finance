@@ -4,8 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
-import { useCategories } from '@/hooks/useCategories';
-import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { cn } from '@/lib/utils';
 
 interface ChatMessage {
@@ -21,28 +19,6 @@ const SUGGESTED = [
   'How are my savings goals doing?',
 ];
 
-function buildSystemPrompt(opts: {
-  userName?: string | null;
-  currencySymbol: string;
-  monthlyBudget: number;
-  categories: { name: string; budget_limit: number | null }[];
-  goals: { name: string; target_amount: number; current_amount: number; is_completed: boolean }[];
-  txSummary: string;
-}) {
-  const { userName, currencySymbol, monthlyBudget, categories, goals, txSummary } = opts;
-  return `You are the BALANCIO Spending Assistant, a helpful finance chatbot inside a personal expense tracker app.
-Answer questions about the user's spending using ONLY the data below. Be concise, friendly, and use ${currencySymbol} for amounts.
-If the data doesn't contain the answer, say so honestly. Never invent transactions.
-
-USER: ${userName || 'Unknown'}
-MONTHLY BUDGET: ${currencySymbol}${monthlyBudget}
-CATEGORIES (with optional monthly budget limits):
-${categories.map(c => `- ${c.name}${c.budget_limit ? ` (limit ${currencySymbol}${c.budget_limit})` : ''}`).join('\n') || '- none'}
-SAVINGS GOALS:
-${goals.map(g => `- ${g.name}: ${currencySymbol}${g.current_amount} of ${currencySymbol}${g.target_amount}${g.is_completed ? ' (completed)' : ''}`).join('\n') || '- none'}
-TRANSACTIONS (last 12 months):
-${txSummary}`;
-}
 
 export function ChatWidget() {
   const { user } = useAuth();
