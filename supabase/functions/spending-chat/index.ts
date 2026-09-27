@@ -6,7 +6,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 // No business logic lives here — spending context is built in the app.
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const MODEL = 'meta-llama/llama-3.3-70b-instruct:free'
+const MODEL = 'meta-llama/llama-3.1-8b-instruct:free'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
