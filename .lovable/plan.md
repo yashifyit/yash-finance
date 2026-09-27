@@ -10,8 +10,8 @@
 
 ## How it works
 1. You send a question from the chat window.
-2. A secure backend function checks you're signed in, loads your recent transactions (last 12 months), categories, budget, currency and savings goals.
-3. It sends a summary of that data plus the conversation to Lovable AI, and streams the answer back.
+2. The app collects your recent transactions, categories, budget, currency and savings goals from the data it already loads, and builds a short summary.
+3. That summary plus the conversation is sent straight to the AI model through a minimal key-holding relay (no custom logic — it just forwards the request), and the answer streams back.
 4. Both your message and the reply are saved to your account.
 
 ## Technical details
