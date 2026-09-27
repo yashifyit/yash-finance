@@ -11,7 +11,7 @@
 ## How it works
 1. You send a question from the chat window.
 2. The app collects your recent transactions, categories, budget, currency and savings goals from the data it already loads, and builds a short summary.
-3. That summary plus the conversation is sent straight to the AI model through a minimal key-holding relay (no custom logic — it just forwards the request), and the answer streams back.
+3. That summary plus the conversation is sent to an OpenRouter free model through a minimal key-holding relay (no custom logic — it just forwards the request to OpenRouter's chat API), and the answer streams back.
 4. Both your message and the reply are saved to your account.
 
 ## Technical details
