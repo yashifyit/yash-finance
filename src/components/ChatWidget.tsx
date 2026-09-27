@@ -56,23 +56,6 @@ export function ChatWidget() {
     if (open) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
 
-  const fetchTxSummary = useCallback(async () => {
-    if (!user) return 'No transactions.';
-    const since = new Date();
-    since.setMonth(since.getMonth() - 12);
-    const { data } = await supabase
-      .from('transactions')
-      .select('type, amount, date, note, categories(name)')
-      .eq('user_id', user.id)
-      .gte('date', since.toISOString().slice(0, 10))
-      .order('date', { ascending: false })
-      .limit(300);
-    if (!data || data.length === 0) return 'No transactions recorded yet.';
-    return data
-      .map((t: any) => `${t.date} | ${t.type} | ${settings?.currency_symbol || '₹'}${t.amount} | ${t.categories?.name || 'Uncategorized'}${t.note ? ` | ${t.note}` : ''}`)
-      .join('\n');
-  }, [user, settings?.currency_symbol]);
-
   const send = async (text: string) => {
     const question = text.trim();
     if (!question || streaming || !user) return;
@@ -86,16 +69,6 @@ export function ChatWidget() {
     supabase.from('chat_messages').insert({ user_id: user.id, role: 'user', content: question }).then(() => {});
 
     try {
-      const txSummary = await fetchTxSummary();
-      const system = buildSystemPrompt({
-        userName: settings?.user_name,
-        currencySymbol: settings?.currency_symbol || '₹',
-        monthlyBudget: settings?.monthly_budget || 0,
-        categories,
-        goals,
-        txSummary,
-      });
-
       const history = [...messages, userMsg].slice(-20).map(m => ({ role: m.role, content: m.content }));
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -109,7 +82,7 @@ export function ChatWidget() {
             Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ system, messages: history }),
+          body: JSON.stringify({ messages: history }),
         }
       );
 
