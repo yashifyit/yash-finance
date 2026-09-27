@@ -95,9 +95,9 @@ export function ChatWidget() {
       .limit(300);
     if (!data || data.length === 0) return 'No transactions recorded yet.';
     return data
-      .map((t: any) => `${t.date} | ${t.type} | ${settings.currencySymbol}${t.amount} | ${t.categories?.name || 'Uncategorized'}${t.note ? ` | ${t.note}` : ''}`)
+      .map((t: any) => `${t.date} | ${t.type} | ${settings?.currency_symbol || '₹'}${t.amount} | ${t.categories?.name || 'Uncategorized'}${t.note ? ` | ${t.note}` : ''}`)
       .join('\n');
-  }, [user, settings.currencySymbol]);
+  }, [user, settings?.currency_symbol]);
 
   const send = async (text: string) => {
     const question = text.trim();
@@ -114,9 +114,9 @@ export function ChatWidget() {
     try {
       const txSummary = await fetchTxSummary();
       const system = buildSystemPrompt({
-        userName: settings.userName,
-        currencySymbol: settings.currencySymbol,
-        monthlyBudget: settings.monthlyBudget,
+        userName: settings?.user_name,
+        currencySymbol: settings?.currency_symbol || '₹',
+        monthlyBudget: settings?.monthly_budget || 0,
         categories,
         goals,
         txSummary,
@@ -264,7 +264,7 @@ export function ChatWidget() {
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <MessageCircle className="h-8 w-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  Hi{settings.userName ? ` ${settings.userName}` : ''}! Ask me anything about your spending.
+                  Hi{settings?.user_name ? ` ${settings.user_name}` : ''}! Ask me anything about your spending.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {SUGGESTED.map(q => (
