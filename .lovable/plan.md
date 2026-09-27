@@ -16,7 +16,7 @@
 
 ## Technical details
 - DB: `chat_messages` table (id uuid, user_id, role, parts jsonb, created_at) with GRANTs + RLS scoped to `auth.uid()`.
-- Edge function `spending-chat`: verifies JWT, fetches user data server-side, builds a compact aggregated context (monthly totals, per-category totals, recent 200 transactions), uses AI SDK `streamText` via Lovable AI Gateway Responses API with `openai/gpt-6-astra`, `toUIMessageStreamResponse({ originalMessages, onFinish })` to persist the assistant message.
+- Thin relay function `spending-chat`: no business logic — it only holds the AI API key securely and forwards the chat request to the model, streaming the reply back. A raw API key cannot be placed in browser code because anyone could open the app and steal it; the relay is the minimum safe way to use a key. Spending data is gathered in the app from hooks it already uses and sent along with the question.
 - Frontend: `ChatWidget` (floating button + panel) mounted in protected layout, `useChat` from AI SDK with auth header, AI Elements for messages/composer, markdown rendering, textarea autofocus.
 - Errors (rate limits, out of credits) shown as friendly messages in the chat.
 - Button placed so it doesn't overlap the center "+" button of the bottom menu.
