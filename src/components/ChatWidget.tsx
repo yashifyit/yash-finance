@@ -23,8 +23,6 @@ const SUGGESTED = [
 export function ChatWidget() {
   const { user } = useAuth();
   const { settings } = useSettings();
-  const { categories } = useCategories();
-  const { goals } = useSavingsGoals();
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
