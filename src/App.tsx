@@ -31,6 +31,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatWidget />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
