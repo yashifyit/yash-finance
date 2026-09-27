@@ -216,7 +216,7 @@ export function ChatWidget() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open spending assistant"
-          className="fixed bottom-24 right-4 z-40 flex h-13 w-13 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-transform hover:scale-105 active:scale-95 p-3.5"
+          className="fixed bottom-24 right-4 z-40 flex items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-transform hover:scale-105 active:scale-95 p-3.5"
         >
           <MessageCircle className="h-6 w-6" />
         </button>
