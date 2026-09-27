@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, RotateCcw, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
-import { useCategories } from '@/hooks/useCategories';
-import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { cn } from '@/lib/utils';
 
 interface ChatMessage {
@@ -21,34 +19,10 @@ const SUGGESTED = [
   'How are my savings goals doing?',
 ];
 
-function buildSystemPrompt(opts: {
-  userName?: string | null;
-  currencySymbol: string;
-  monthlyBudget: number;
-  categories: { name: string; budget_limit: number | null }[];
-  goals: { name: string; target_amount: number; current_amount: number; is_completed: boolean }[];
-  txSummary: string;
-}) {
-  const { userName, currencySymbol, monthlyBudget, categories, goals, txSummary } = opts;
-  return `You are the BALANCIO Spending Assistant, a helpful finance chatbot inside a personal expense tracker app.
-Answer questions about the user's spending using ONLY the data below. Be concise, friendly, and use ${currencySymbol} for amounts.
-If the data doesn't contain the answer, say so honestly. Never invent transactions.
-
-USER: ${userName || 'Unknown'}
-MONTHLY BUDGET: ${currencySymbol}${monthlyBudget}
-CATEGORIES (with optional monthly budget limits):
-${categories.map(c => `- ${c.name}${c.budget_limit ? ` (limit ${currencySymbol}${c.budget_limit})` : ''}`).join('\n') || '- none'}
-SAVINGS GOALS:
-${goals.map(g => `- ${g.name}: ${currencySymbol}${g.current_amount} of ${currencySymbol}${g.target_amount}${g.is_completed ? ' (completed)' : ''}`).join('\n') || '- none'}
-TRANSACTIONS (last 12 months):
-${txSummary}`;
-}
 
 export function ChatWidget() {
   const { user } = useAuth();
   const { settings } = useSettings();
-  const { categories } = useCategories();
-  const { goals } = useSavingsGoals();
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -82,23 +56,6 @@ export function ChatWidget() {
     if (open) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
 
-  const fetchTxSummary = useCallback(async () => {
-    if (!user) return 'No transactions.';
-    const since = new Date();
-    since.setMonth(since.getMonth() - 12);
-    const { data } = await supabase
-      .from('transactions')
-      .select('type, amount, date, note, categories(name)')
-      .eq('user_id', user.id)
-      .gte('date', since.toISOString().slice(0, 10))
-      .order('date', { ascending: false })
-      .limit(300);
-    if (!data || data.length === 0) return 'No transactions recorded yet.';
-    return data
-      .map((t: any) => `${t.date} | ${t.type} | ${settings?.currency_symbol || '₹'}${t.amount} | ${t.categories?.name || 'Uncategorized'}${t.note ? ` | ${t.note}` : ''}`)
-      .join('\n');
-  }, [user, settings?.currency_symbol]);
-
   const send = async (text: string) => {
     const question = text.trim();
     if (!question || streaming || !user) return;
@@ -112,16 +69,6 @@ export function ChatWidget() {
     supabase.from('chat_messages').insert({ user_id: user.id, role: 'user', content: question }).then(() => {});
 
     try {
-      const txSummary = await fetchTxSummary();
-      const system = buildSystemPrompt({
-        userName: settings?.user_name,
-        currencySymbol: settings?.currency_symbol || '₹',
-        monthlyBudget: settings?.monthly_budget || 0,
-        categories,
-        goals,
-        txSummary,
-      });
-
       const history = [...messages, userMsg].slice(-20).map(m => ({ role: m.role, content: m.content }));
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -135,7 +82,7 @@ export function ChatWidget() {
             Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ system, messages: history }),
+          body: JSON.stringify({ messages: history }),
         }
       );
 
