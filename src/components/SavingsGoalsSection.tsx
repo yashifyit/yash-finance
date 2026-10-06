@@ -133,7 +133,7 @@ export function SavingsGoalsSection() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteGoal(goal.id)}
+                      onClick={() => setGoalToDelete({ id: goal.id, name: goal.name })}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
