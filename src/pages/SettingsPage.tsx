@@ -117,6 +117,26 @@ export default function SettingsPage() {
     });
   };
 
+  const handleEditCategory = () => {
+    if (!editingCategory) return;
+    if (!editingCategory.name.trim()) {
+      toast({ title: 'Please enter a category name', variant: 'destructive' });
+      return;
+    }
+    updateCategory({
+      id: editingCategory.id,
+      name: editingCategory.name.trim(),
+      icon: editingCategory.icon,
+      color: editingCategory.color,
+      budget_limit: editingCategory.budget ? parseFloat(editingCategory.budget) : null,
+    }, {
+      onSuccess: () => {
+        toast({ title: 'Category updated' });
+        setEditingCategory(null);
+      }
+    });
+  };
+
   const COLORS = [
     '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
     '#8B5CF6', '#EC4899', '#6B7280', '#14B8A6'
@@ -239,15 +259,30 @@ export default function SettingsPage() {
                       )}
                     </div>
                   </div>
-                  {!category.is_default && (
+                  <div className="flex items-center">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => askDeleteCategory(category.id, category.name)}
+                      onClick={() => setEditingCategory({
+                        id: category.id,
+                        name: category.name,
+                        icon: category.icon,
+                        color: category.color || '#6B7280',
+                        budget: category.budget_limit != null ? String(category.budget_limit) : '',
+                      })}
                     >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                  )}
+                    {!category.is_default && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => askDeleteCategory(category.id, category.name)}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
