@@ -462,6 +462,84 @@ export default function SettingsPage() {
         </SheetContent>
       </Sheet>
 
+      {/* Edit Category Sheet */}
+      <Sheet open={!!editingCategory} onOpenChange={(o) => !o && setEditingCategory(null)}>
+        <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle>Edit Category</SheetTitle>
+          </SheetHeader>
+          {editingCategory && (
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Name</label>
+                <Input
+                  placeholder="Category name"
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Icon</label>
+                <div className="grid grid-cols-6 gap-2 mt-2">
+                  {CATEGORY_ICONS.slice(0, 12).map(({ name, icon: Icon }) => (
+                    <button
+                      key={name}
+                      onClick={() => setEditingCategory({ ...editingCategory, icon: name })}
+                      className={cn(
+                        'p-3 rounded-xl transition-all',
+                        editingCategory.icon === name
+                          ? 'bg-foreground text-background'
+                          : 'bg-muted hover:bg-muted/80'
+                      )}
+                    >
+                      <Icon className="h-5 w-5 mx-auto" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Color</label>
+                <div className="flex gap-2 mt-2">
+                  {COLORS.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setEditingCategory({ ...editingCategory, color })}
+                      className={cn(
+                        'h-10 w-10 rounded-full transition-transform',
+                        editingCategory.color === color && 'ring-2 ring-offset-2 ring-foreground scale-110'
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Budget Limit (optional)</label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={editingCategory.budget}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, budget: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+
+              <Button
+                onClick={handleEditCategory}
+                disabled={isUpdatingCategory}
+                className="w-full h-12"
+              >
+                {isUpdatingCategory ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
       <BottomNav onAddClick={() => setShowAddSheet(true)} />
 
       <ConfirmDeleteDialog
