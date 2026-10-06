@@ -12,7 +12,7 @@ import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAuth } from '@/hooks/useAuth';
 import { CURRENCIES, getIconComponent, CATEGORY_ICONS } from '@/lib/constants';
-import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight, LogOut } from 'lucide-react';
+import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight, LogOut, Pencil } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, subMonths } from 'date-fns';
