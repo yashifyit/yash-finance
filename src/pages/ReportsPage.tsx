@@ -3,10 +3,10 @@ import { BottomNav } from '@/components/BottomNav';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useSettings } from '@/hooks/useSettings';
+import { useAuth } from '@/hooks/useAuth';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from '@/hooks/useDeviceId';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
@@ -18,12 +18,13 @@ export default function ReportsPage() {
   const { totals, isLoading } = useTransactions(selectedMonth);
   const { settings } = useSettings();
   const currencySymbol = settings?.currency_symbol || '₹';
-  const deviceId = getDeviceId();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   // Get previous month data for comparison
   const previousMonth = subMonths(selectedMonth, 1);
   const { data: previousTotals } = useQuery({
-    queryKey: ['transactions-totals', deviceId, format(previousMonth, 'yyyy-MM')],
+    queryKey: ['transactions-totals', userId, format(previousMonth, 'yyyy-MM')],
     queryFn: async () => {
       const start = format(startOfMonth(previousMonth), 'yyyy-MM-dd');
       const end = format(endOfMonth(previousMonth), 'yyyy-MM-dd');
@@ -31,7 +32,7 @@ export default function ReportsPage() {
       const { data, error } = await supabase
         .from('transactions')
         .select('type, amount')
-        .eq('device_id', deviceId)
+        .eq('user_id', userId!)
         .gte('date', start)
         .lte('date', end);
       
@@ -47,48 +48,53 @@ export default function ReportsPage() {
         { income: 0, expenses: 0 }
       );
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
 
-  // Get last 6 months data for chart
+  // Get last 6 months data for chart in a single query, grouped by month in code
   const { data: monthlyData = [] } = useQuery({
-    queryKey: ['monthly-chart', deviceId],
+    queryKey: ['monthly-chart', userId],
     queryFn: async () => {
+      const now = new Date();
+      const firstMonth = subMonths(now, 5);
+      const start = format(startOfMonth(firstMonth), 'yyyy-MM-dd');
+      const end = format(endOfMonth(now), 'yyyy-MM-dd');
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('type, amount, date')
+        .eq('user_id', userId!)
+        .gte('date', start)
+        .lte('date', end);
+
+      if (error) throw error;
+
       const months = [];
       for (let i = 5; i >= 0; i--) {
-        const month = subMonths(new Date(), i);
-        const start = format(startOfMonth(month), 'yyyy-MM-dd');
-        const end = format(endOfMonth(month), 'yyyy-MM-dd');
-        
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('type, amount')
-          .eq('device_id', deviceId)
-          .gte('date', start)
-          .lte('date', end);
-        
-        if (error) throw error;
-        
-        const totals = data.reduce(
-          (acc, t) => {
-            const amount = Number(t.amount);
-            if (t.type === 'income') acc.income += amount;
-            else acc.expenses += amount;
-            return acc;
-          },
-          { income: 0, expenses: 0 }
-        );
-        
+        const month = subMonths(now, i);
         months.push({
+          key: format(month, 'yyyy-MM'),
           month: format(month, 'MMM'),
-          income: totals.income,
-          expenses: totals.expenses,
+          income: 0,
+          expenses: 0,
         });
       }
+
+      for (const t of data) {
+        const key = t.date.slice(0, 7);
+        const bucket = months.find((m) => m.key === key);
+        if (!bucket) continue;
+        const amount = Number(t.amount);
+        if (t.type === 'income') bucket.income += amount;
+        else bucket.expenses += amount;
+      }
+
       return months;
     },
-    enabled: !!deviceId,
+    enabled: !!userId,
   });
+
+  const hasPreviousData = !!previousTotals && (previousTotals.income > 0 || previousTotals.expenses > 0);
 
   const incomeChange = previousTotals?.income 
     ? ((totals.income - previousTotals.income) / previousTotals.income) * 100 
@@ -144,7 +150,7 @@ export default function ReportsPage() {
             <p className="text-xl font-bold text-foreground">
               {currencySymbol}{totals.income.toLocaleString('en-IN')}
             </p>
-            {previousTotals && (
+            {hasPreviousData ? (
               <div className={cn(
                 'flex items-center gap-1 text-xs mt-1',
                 incomeChange >= 0 ? 'text-success' : 'text-destructive'
@@ -152,6 +158,8 @@ export default function ReportsPage() {
                 {incomeChange >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {Math.abs(incomeChange).toFixed(0)}% vs last month
               </div>
+            ) : (
+              <p className="text-xs mt-1 text-muted-foreground">No data last month</p>
             )}
           </div>
 
@@ -163,7 +171,7 @@ export default function ReportsPage() {
             <p className="text-xl font-bold text-foreground">
               {currencySymbol}{totals.expenses.toLocaleString('en-IN')}
             </p>
-            {previousTotals && (
+            {hasPreviousData ? (
               <div className={cn(
                 'flex items-center gap-1 text-xs mt-1',
                 expenseChange <= 0 ? 'text-success' : 'text-destructive'
@@ -171,6 +179,8 @@ export default function ReportsPage() {
                 {expenseChange <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                 {Math.abs(expenseChange).toFixed(0)}% vs last month
               </div>
+            ) : (
+              <p className="text-xs mt-1 text-muted-foreground">No data last month</p>
             )}
           </div>
         </div>
@@ -208,11 +218,19 @@ export default function ReportsPage() {
                 tickLine={false}
                 tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               />
+              <Bar dataKey="income" radius={[4, 4, 0, 0]}>
+                {monthlyData.map((_, index) => (
+                  <Cell 
+                    key={`income-${index}`} 
+                    fill="hsl(var(--success))"
+                  />
+                ))}
+              </Bar>
               <Bar dataKey="expenses" radius={[4, 4, 0, 0]}>
                 {monthlyData.map((_, index) => (
                   <Cell 
-                    key={`cell-${index}`} 
-                    fill={index === monthlyData.length - 1 ? 'hsl(var(--foreground))' : 'hsl(var(--muted))'}
+                    key={`expenses-${index}`} 
+                    fill="hsl(var(--destructive))"
                   />
                 ))}
               </Bar>
@@ -220,12 +238,12 @@ export default function ReportsPage() {
           </ResponsiveContainer>
           <div className="flex items-center justify-center gap-6 mt-2">
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-foreground" />
-              <span className="text-sm text-muted-foreground">Current</span>
+              <div className="h-3 w-3 rounded bg-success" />
+              <span className="text-sm text-muted-foreground">Income</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-muted" />
-              <span className="text-sm text-muted-foreground">Previous</span>
+              <div className="h-3 w-3 rounded bg-destructive" />
+              <span className="text-sm text-muted-foreground">Expenses</span>
             </div>
           </div>
         </div>
