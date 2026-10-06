@@ -35,12 +35,13 @@ export default function SettingsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   const { settings, updateSettings, isLoading } = useSettings();
-  const { categories, addCategory, deleteCategory, isAdding: isAddingCategory } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory, isAdding: isAddingCategory, isUpdating: isUpdatingCategory } = useCategories();
   const { recurringTransactions, deleteRecurring } = useRecurringTransactions();
   const { transactions } = useTransactions();
   const { signOut, user } = useAuth();
   const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string; count: number | null } | null>(null);
   const [recurringToDelete, setRecurringToDelete] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; icon: string; color: string; budget: string } | null>(null);
 
   const askDeleteCategory = async (id: string, name: string) => {
     setCategoryToDelete({ id, name, count: null });
