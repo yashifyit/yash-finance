@@ -4,8 +4,8 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSettings } from '@/hooks/useSettings';
 import { SkeletonDonut } from '@/components/SkeletonLoaders';
 
-export function SpendingDonut() {
-  const { transactions, isLoading: transactionsLoading, totals } = useTransactions();
+export function SpendingDonut({ month }: { month?: Date }) {
+  const { transactions, isLoading: transactionsLoading, totals } = useTransactions(month);
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { settings } = useSettings();
   
