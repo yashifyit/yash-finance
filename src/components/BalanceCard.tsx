@@ -89,28 +89,6 @@ export function BalanceCard() {
           <span>{currencySymbol}{monthlyBudget.toLocaleString('en-IN')}</span>
         </div>
       </div>
-
-      {/* Income & Expenses */}
-      <div className="grid grid-cols-2 gap-4 pt-2">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-success">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Income</span>
-          </div>
-          <p className="text-xl font-semibold text-foreground">
-            {currencySymbol}{totals.income.toLocaleString('en-IN')}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-destructive">
-            <TrendingDown className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Expenses</span>
-          </div>
-          <p className="text-xl font-semibold text-foreground">
-            {currencySymbol}{totals.expenses.toLocaleString('en-IN')}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
