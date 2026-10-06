@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { Switch } from '@/components/ui/switch';
@@ -39,14 +39,6 @@ export default function SettingsPage() {
     toast({ title: 'Signed out successfully' });
   };
 
-  // Handle dark mode toggle
-  useEffect(() => {
-    if (settings?.dark_mode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [settings?.dark_mode]);
 
   const handleExportCSV = () => {
     if (transactions.length === 0) {
