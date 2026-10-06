@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
         {/* Donut Chart */}
         <section className="bg-card rounded-2xl shadow-premium p-4">
           <h2 className="text-lg font-semibold text-foreground mb-2">Spending by Category</h2>
-          <SpendingDonut />
+          <SpendingDonut month={selectedMonth} />
         </section>
 
         {/* Category Budget Progress */}
