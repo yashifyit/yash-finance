@@ -12,7 +12,7 @@ import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAuth } from '@/hooks/useAuth';
 import { CURRENCIES, getIconComponent, CATEGORY_ICONS } from '@/lib/constants';
-import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight, LogOut } from 'lucide-react';
+import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight, LogOut, Pencil } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, subMonths } from 'date-fns';
@@ -35,12 +35,13 @@ export default function SettingsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   const { settings, updateSettings, isLoading } = useSettings();
-  const { categories, addCategory, deleteCategory, isAdding: isAddingCategory } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory, isAdding: isAddingCategory, isUpdating: isUpdatingCategory } = useCategories();
   const { recurringTransactions, deleteRecurring } = useRecurringTransactions();
   const { transactions } = useTransactions();
   const { signOut, user } = useAuth();
   const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string; count: number | null } | null>(null);
   const [recurringToDelete, setRecurringToDelete] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; icon: string; color: string; budget: string } | null>(null);
 
   const askDeleteCategory = async (id: string, name: string) => {
     setCategoryToDelete({ id, name, count: null });
@@ -112,6 +113,26 @@ export default function SettingsPage() {
         setNewCategoryName('');
         setNewCategoryBudget('');
         setShowCategorySheet(false);
+      }
+    });
+  };
+
+  const handleEditCategory = () => {
+    if (!editingCategory) return;
+    if (!editingCategory.name.trim()) {
+      toast({ title: 'Please enter a category name', variant: 'destructive' });
+      return;
+    }
+    updateCategory({
+      id: editingCategory.id,
+      name: editingCategory.name.trim(),
+      icon: editingCategory.icon,
+      color: editingCategory.color,
+      budget_limit: editingCategory.budget ? parseFloat(editingCategory.budget) : null,
+    }, {
+      onSuccess: () => {
+        toast({ title: 'Category updated' });
+        setEditingCategory(null);
       }
     });
   };
@@ -238,15 +259,30 @@ export default function SettingsPage() {
                       )}
                     </div>
                   </div>
-                  {!category.is_default && (
+                  <div className="flex items-center">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => askDeleteCategory(category.id, category.name)}
+                      onClick={() => setEditingCategory({
+                        id: category.id,
+                        name: category.name,
+                        icon: category.icon,
+                        color: category.color || '#6B7280',
+                        budget: category.budget_limit != null ? String(category.budget_limit) : '',
+                      })}
                     >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                  )}
+                    {!category.is_default && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => askDeleteCategory(category.id, category.name)}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -423,6 +459,84 @@ export default function SettingsPage() {
               {isAddingCategory ? 'Adding...' : 'Add Category'}
             </Button>
           </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Category Sheet */}
+      <Sheet open={!!editingCategory} onOpenChange={(o) => !o && setEditingCategory(null)}>
+        <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle>Edit Category</SheetTitle>
+          </SheetHeader>
+          {editingCategory && (
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Name</label>
+                <Input
+                  placeholder="Category name"
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Icon</label>
+                <div className="grid grid-cols-6 gap-2 mt-2">
+                  {CATEGORY_ICONS.slice(0, 12).map(({ name, icon: Icon }) => (
+                    <button
+                      key={name}
+                      onClick={() => setEditingCategory({ ...editingCategory, icon: name })}
+                      className={cn(
+                        'p-3 rounded-xl transition-all',
+                        editingCategory.icon === name
+                          ? 'bg-foreground text-background'
+                          : 'bg-muted hover:bg-muted/80'
+                      )}
+                    >
+                      <Icon className="h-5 w-5 mx-auto" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Color</label>
+                <div className="flex gap-2 mt-2">
+                  {COLORS.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setEditingCategory({ ...editingCategory, color })}
+                      className={cn(
+                        'h-10 w-10 rounded-full transition-transform',
+                        editingCategory.color === color && 'ring-2 ring-offset-2 ring-foreground scale-110'
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Budget Limit (optional)</label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={editingCategory.budget}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, budget: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+
+              <Button
+                onClick={handleEditCategory}
+                disabled={isUpdatingCategory}
+                className="w-full h-12"
+              >
+                {isUpdatingCategory ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
 

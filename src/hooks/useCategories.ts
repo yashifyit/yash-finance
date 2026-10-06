@@ -110,5 +110,6 @@ export function useCategories() {
     updateCategory: updateCategory.mutate,
     deleteCategory: deleteCategory.mutate,
     isAdding: addCategory.isPending,
+    isUpdating: updateCategory.isPending,
   };
 }
