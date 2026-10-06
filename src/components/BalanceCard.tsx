@@ -31,10 +31,7 @@ export function BalanceCard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Total Balance
-        </span>
-        <span className="text-xs text-muted-foreground">
-          This Month
+          This Month's Balance
         </span>
       </div>
 
@@ -43,6 +40,28 @@ export function BalanceCard() {
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
           {currencySymbol}{balance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
         </h1>
+      </div>
+
+      {/* Income & Expenses */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-success">
+            <TrendingUp className="h-4 w-4" />
+            <span className="text-xs font-medium uppercase tracking-wide">Income</span>
+          </div>
+          <p className="text-xl font-semibold text-foreground">
+            {currencySymbol}{totals.income.toLocaleString('en-IN')}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-destructive">
+            <TrendingDown className="h-4 w-4" />
+            <span className="text-xs font-medium uppercase tracking-wide">Expenses</span>
+          </div>
+          <p className="text-xl font-semibold text-foreground">
+            {currencySymbol}{totals.expenses.toLocaleString('en-IN')}
+          </p>
+        </div>
       </div>
 
       {/* Budget Progress */}
