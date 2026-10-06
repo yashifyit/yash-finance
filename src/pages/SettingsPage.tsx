@@ -39,14 +39,6 @@ export default function SettingsPage() {
     toast({ title: 'Signed out successfully' });
   };
 
-  // Handle dark mode toggle
-  useEffect(() => {
-    if (settings?.dark_mode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [settings?.dark_mode]);
 
   const handleExportCSV = () => {
     if (transactions.length === 0) {
