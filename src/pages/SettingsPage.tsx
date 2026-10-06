@@ -427,6 +427,34 @@ export default function SettingsPage() {
       </Sheet>
 
       <BottomNav onAddClick={() => setShowAddSheet(true)} />
+
+      <ConfirmDeleteDialog
+        open={!!categoryToDelete}
+        onOpenChange={(o) => !o && setCategoryToDelete(null)}
+        title={`Delete "${categoryToDelete?.name ?? ''}"?`}
+        description={
+          categoryToDelete?.count == null
+            ? 'Checking linked transactions…'
+            : categoryToDelete.count === 0
+              ? 'No transactions use this category. This cannot be undone.'
+              : `${categoryToDelete.count} transaction${categoryToDelete.count === 1 ? '' : 's'} will become Uncategorized. This cannot be undone.`
+        }
+        onConfirm={() => {
+          if (categoryToDelete) deleteCategory(categoryToDelete.id);
+          setCategoryToDelete(null);
+        }}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!recurringToDelete}
+        onOpenChange={(o) => !o && setRecurringToDelete(null)}
+        title="Delete recurring item?"
+        description="Future transactions will no longer be created. Past transactions are kept."
+        onConfirm={() => {
+          if (recurringToDelete) deleteRecurring(recurringToDelete);
+          setRecurringToDelete(null);
+        }}
+      />
       <AddTransactionSheet open={showAddSheet} onOpenChange={setShowAddSheet} />
     </div>
   );
