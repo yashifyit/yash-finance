@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -17,6 +18,7 @@ const GOAL_COLORS = [
 
 export function SavingsGoalsSection() {
   const { goals, addGoal, deleteGoal, addToGoal, isAdding, isLoading } = useSavingsGoals();
+  const [goalToDelete, setGoalToDelete] = useState<{ id: string; name: string } | null>(null);
   const { settings } = useSettings();
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showAddMoneySheet, setShowAddMoneySheet] = useState(false);
@@ -133,7 +135,7 @@ export function SavingsGoalsSection() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteGoal(goal.id)}
+                      onClick={() => setGoalToDelete({ id: goal.id, name: goal.name })}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
@@ -261,6 +263,16 @@ export function SavingsGoalsSection() {
           </div>
         </SheetContent>
       </Sheet>
+      <ConfirmDeleteDialog
+        open={!!goalToDelete}
+        onOpenChange={(o) => !o && setGoalToDelete(null)}
+        title={`Delete "${goalToDelete?.name ?? ''}"?`}
+        description="This goal and its saved progress will be removed. This cannot be undone."
+        onConfirm={() => {
+          if (goalToDelete) deleteGoal(goalToDelete.id);
+          setGoalToDelete(null);
+        }}
+      />
     </section>
   );
 }

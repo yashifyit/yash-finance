@@ -10,6 +10,9 @@ import { useTransactions, TransactionWithCategory } from '@/hooks/useTransaction
 import { useSettings } from '@/hooks/useSettings';
 import { getIconComponent } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
+import { toast as sonnerToast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { CalendarIcon, Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +33,7 @@ export function AddTransactionSheet({ open, onOpenChange, editTransaction }: Add
 
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { addTransaction, updateTransaction, deleteTransaction, isAdding } = useTransactions();
+  const queryClient = useQueryClient();
   const { settings } = useSettings();
   const currencySymbol = settings?.currency_symbol || '₹';
 
@@ -94,10 +98,28 @@ export function AddTransactionSheet({ open, onOpenChange, editTransaction }: Add
 
   const handleDelete = () => {
     if (!editTransaction) return;
-    
-    deleteTransaction(editTransaction.id, {
+    const original = editTransaction;
+
+    deleteTransaction(original.id, {
       onSuccess: () => {
-        toast({ title: 'Transaction deleted' });
+        sonnerToast('Transaction deleted', {
+          duration: 5000,
+          action: {
+            label: 'Undo',
+            onClick: async () => {
+              const { categories: _c, ...row } = original as any;
+              const { error } = await supabase
+                .from('transactions')
+                .insert({ ...row, device_id: row.device_id ?? row.user_id } as any);
+              if (error) {
+                sonnerToast.error('Could not restore transaction');
+              } else {
+                queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                sonnerToast.success('Transaction restored');
+              }
+            },
+          },
+        });
         resetForm();
         onOpenChange(false);
       },

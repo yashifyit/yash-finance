@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildTransactionsCsv } from '@/lib/csv';
 import { UserProfileSection } from '@/components/UserProfileSection';
 import { SavingsGoalsSection } from '@/components/SavingsGoalsSection';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 
 export default function SettingsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -38,6 +39,17 @@ export default function SettingsPage() {
   const { recurringTransactions, deleteRecurring } = useRecurringTransactions();
   const { transactions } = useTransactions();
   const { signOut, user } = useAuth();
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string; count: number | null } | null>(null);
+  const [recurringToDelete, setRecurringToDelete] = useState<string | null>(null);
+
+  const askDeleteCategory = async (id: string, name: string) => {
+    setCategoryToDelete({ id, name, count: null });
+    const { count } = await supabase
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('category_id', id);
+    setCategoryToDelete(prev => (prev?.id === id ? { ...prev, count: count ?? 0 } : prev));
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -230,7 +242,7 @@ export default function SettingsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteCategory(category.id)}
+                      onClick={() => askDeleteCategory(category.id, category.name)}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
@@ -266,7 +278,7 @@ export default function SettingsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteRecurring(rt.id)}
+                    onClick={() => setRecurringToDelete(rt.id)}
                   >
                     <Trash2 className="h-4 w-4 text-muted-foreground" />
                   </Button>
@@ -415,6 +427,34 @@ export default function SettingsPage() {
       </Sheet>
 
       <BottomNav onAddClick={() => setShowAddSheet(true)} />
+
+      <ConfirmDeleteDialog
+        open={!!categoryToDelete}
+        onOpenChange={(o) => !o && setCategoryToDelete(null)}
+        title={`Delete "${categoryToDelete?.name ?? ''}"?`}
+        description={
+          categoryToDelete?.count == null
+            ? 'Checking linked transactions…'
+            : categoryToDelete.count === 0
+              ? 'No transactions use this category. This cannot be undone.'
+              : `${categoryToDelete.count} transaction${categoryToDelete.count === 1 ? '' : 's'} will become Uncategorized. This cannot be undone.`
+        }
+        onConfirm={() => {
+          if (categoryToDelete) deleteCategory(categoryToDelete.id);
+          setCategoryToDelete(null);
+        }}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!recurringToDelete}
+        onOpenChange={(o) => !o && setRecurringToDelete(null)}
+        title="Delete recurring item?"
+        description="Future transactions will no longer be created. Past transactions are kept."
+        onConfirm={() => {
+          if (recurringToDelete) deleteRecurring(recurringToDelete);
+          setRecurringToDelete(null);
+        }}
+      />
       <AddTransactionSheet open={showAddSheet} onOpenChange={setShowAddSheet} />
     </div>
   );
