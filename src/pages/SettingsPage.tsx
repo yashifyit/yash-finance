@@ -15,7 +15,9 @@ import { CURRENCIES, getIconComponent, CATEGORY_ICONS } from '@/lib/constants';
 import { Moon, Download, RefreshCw, Plus, Trash2, ChevronRight, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, startOfMonth, subMonths } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { buildTransactionsCsv } from '@/lib/csv';
 import { UserProfileSection } from '@/components/UserProfileSection';
 import { SavingsGoalsSection } from '@/components/SavingsGoalsSection';
 
@@ -27,6 +29,9 @@ export default function SettingsPage() {
   const [newCategoryIcon, setNewCategoryIcon] = useState('receipt');
   const [newCategoryColor, setNewCategoryColor] = useState('#6B7280');
   const [newCategoryBudget, setNewCategoryBudget] = useState('');
+  const [showExportSheet, setShowExportSheet] = useState(false);
+  const [exportRange, setExportRange] = useState<'month' | '3months' | 'all'>('month');
+  const [isExporting, setIsExporting] = useState(false);
 
   const { settings, updateSettings, isLoading } = useSettings();
   const { categories, addCategory, deleteCategory, isAdding: isAddingCategory } = useCategories();
@@ -40,31 +45,42 @@ export default function SettingsPage() {
   };
 
 
-  const handleExportCSV = () => {
-    if (transactions.length === 0) {
-      toast({ title: 'No transactions to export', variant: 'destructive' });
-      return;
+  const handleExportCSV = async () => {
+    if (!user) return;
+    setIsExporting(true);
+    try {
+      let query = supabase
+        .from('transactions')
+        .select('date, type, amount, note, categories ( name )')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
+      if (exportRange !== 'all') {
+        const start = exportRange === 'month'
+          ? startOfMonth(new Date())
+          : startOfMonth(subMonths(new Date(), 2));
+        query = query.gte('date', format(start, 'yyyy-MM-dd'));
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        toast({ title: 'No transactions to export', variant: 'destructive' });
+        return;
+      }
+      const csv = buildTransactionsCsv(data as any);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expenses-${exportRange}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Export complete' });
+      setShowExportSheet(false);
+    } catch {
+      toast({ title: 'Export failed', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
     }
-
-    const headers = ['Date', 'Type', 'Category', 'Amount', 'Note'];
-    const rows = transactions.map(t => [
-      t.date,
-      t.type,
-      t.categories?.name || 'Uncategorized',
-      t.amount.toString(),
-      t.note || ''
-    ]);
-
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `expenses-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    toast({ title: 'Export complete' });
   };
 
   const handleAddCategory = () => {
@@ -263,7 +279,7 @@ export default function SettingsPage() {
         {/* Export */}
         <section className="bg-card rounded-2xl shadow-premium overflow-hidden">
           <button
-            onClick={handleExportCSV}
+            onClick={() => setShowExportSheet(true)}
             className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -273,6 +289,35 @@ export default function SettingsPage() {
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
         </section>
+
+        <Sheet open={showExportSheet} onOpenChange={setShowExportSheet}>
+          <SheetContent side="bottom" className="rounded-t-3xl">
+            <SheetHeader>
+              <SheetTitle>Export to CSV</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-2">
+              {([
+                ['month', 'This month'],
+                ['3months', 'Last 3 months'],
+                ['all', 'All time'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setExportRange(value)}
+                  className={cn(
+                    'w-full p-4 rounded-xl border text-left font-medium transition-colors',
+                    exportRange === value ? 'border-foreground bg-muted' : 'border-border hover:bg-muted/50'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+              <Button className="w-full mt-4" onClick={handleExportCSV} disabled={isExporting}>
+                {isExporting ? 'Exporting…' : 'Export'}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Account */}
         <section className="bg-card rounded-2xl shadow-premium overflow-hidden">
