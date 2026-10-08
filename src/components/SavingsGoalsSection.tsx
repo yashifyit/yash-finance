@@ -6,7 +6,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Progress } from '@/components/ui/progress';
 import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { useSettings } from '@/hooks/useSettings';
-import { Target, Plus, Trash2, PiggyBank } from 'lucide-react';
+import { Target, Plus, Minus, Trash2, PiggyBank, Pencil } from 'lucide-react';
+import { goalPercent } from '@/lib/goals';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { savingsGoalSchema, validateInput } from '@/lib/validations';
@@ -17,7 +18,9 @@ const GOAL_COLORS = [
 ];
 
 export function SavingsGoalsSection() {
-  const { goals, addGoal, deleteGoal, addToGoal, isAdding, isLoading } = useSavingsGoals();
+  const { goals, addGoal, updateGoal, deleteGoal, addToGoal, isAdding, isUpdating, isLoading } = useSavingsGoals();
+  const [moneyMode, setMoneyMode] = useState<'add' | 'withdraw'>('add');
+  const [editingGoal, setEditingGoal] = useState<{ id: string; name: string; target: string; deadline: string } | null>(null);
   const [goalToDelete, setGoalToDelete] = useState<{ id: string; name: string } | null>(null);
   const { settings } = useSettings();
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -67,9 +70,15 @@ export function SavingsGoalsSection() {
       return;
     }
     
-    addToGoal({ id: selectedGoalId, amount }, {
+    const goal = goals.find(g => g.id === selectedGoalId);
+    if (moneyMode === 'withdraw' && goal && amount > Number(goal.current_amount)) {
+      toast({ title: 'You can\'t withdraw more than is saved', variant: 'destructive' });
+      return;
+    }
+    addToGoal({ id: selectedGoalId, amount: moneyMode === 'withdraw' ? -amount : amount }, {
+      onError: (e: any) => toast({ title: e?.message || 'Something went wrong', variant: 'destructive' }),
       onSuccess: () => {
-        toast({ title: 'Money added to goal!' });
+        toast({ title: moneyMode === 'withdraw' ? 'Money withdrawn' : 'Money added to goal!' });
         setAddMoneyAmount('');
         setShowAddMoneySheet(false);
         setSelectedGoalId(null);
@@ -77,7 +86,30 @@ export function SavingsGoalsSection() {
     });
   };
 
-  const openAddMoney = (goalId: string) => {
+  const handleEditGoal = () => {
+    if (!editingGoal) return;
+    const data = {
+      name: editingGoal.name.trim(),
+      target_amount: parseFloat(editingGoal.target) || 0,
+      current_amount: 0,
+      deadline: editingGoal.deadline || null,
+      color: null,
+      icon: 'target',
+      is_completed: false,
+    };
+    const validation = validateInput(savingsGoalSchema, data);
+    if (validation.success === false) {
+      toast({ title: validation.error, variant: 'destructive' });
+      return;
+    }
+    updateGoal({ id: editingGoal.id, name: data.name, target_amount: data.target_amount, deadline: data.deadline }, {
+      onSuccess: () => { toast({ title: 'Goal updated' }); setEditingGoal(null); },
+      onError: () => toast({ title: 'Could not update goal', variant: 'destructive' }),
+    });
+  };
+
+  const openAddMoney = (goalId: string, mode: 'add' | 'withdraw' = 'add') => {
+    setMoneyMode(mode);
     setSelectedGoalId(goalId);
     setShowAddMoneySheet(true);
   };
@@ -104,7 +136,7 @@ export function SavingsGoalsSection() {
       ) : (
         <div className="divide-y divide-border">
           {goals.map(goal => {
-            const progress = (goal.current_amount / goal.target_amount) * 100;
+            const progress = goalPercent(goal.current_amount, goal.target_amount);
             return (
               <div key={goal.id} className="p-4">
                 <div className="flex items-start justify-between mb-2">
@@ -132,6 +164,19 @@ export function SavingsGoalsSection() {
                       <Plus className="h-3 w-3 mr-1" />
                       Add
                     </Button>
+                    {Number(goal.current_amount) > 0 && (
+                      <Button variant="ghost" size="icon" aria-label="Withdraw" onClick={() => openAddMoney(goal.id, 'withdraw')}>
+                        <Minus className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Edit goal"
+                      onClick={() => setEditingGoal({ id: goal.id, name: goal.name, target: String(goal.target_amount), deadline: goal.deadline ?? '' })}
+                    >
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -146,6 +191,7 @@ export function SavingsGoalsSection() {
                   className="h-2"
                   style={{ '--progress-color': goal.color } as React.CSSProperties}
                 />
+                <p className="text-xs text-muted-foreground mt-1">{progress}% reached</p>
                 {goal.is_completed && (
                   <p className="text-xs text-green-500 mt-1 font-medium">🎉 Goal completed!</p>
                 )}
@@ -233,7 +279,7 @@ export function SavingsGoalsSection() {
       <Sheet open={showAddMoneySheet} onOpenChange={setShowAddMoneySheet}>
         <SheetContent side="bottom" className="h-[35vh] rounded-t-3xl">
           <SheetHeader className="pb-4">
-            <SheetTitle>Add Money to Goal</SheetTitle>
+            <SheetTitle>{moneyMode === 'withdraw' ? 'Withdraw from Goal' : 'Add Money to Goal'}</SheetTitle>
           </SheetHeader>
           <div className="space-y-5">
             <div>
@@ -258,9 +304,42 @@ export function SavingsGoalsSection() {
               onClick={handleAddMoney}
               className="w-full h-12"
             >
-              Add Money
+              {moneyMode === 'withdraw' ? 'Withdraw' : 'Add Money'}
             </Button>
           </div>
+        </SheetContent>
+      </Sheet>
+      {/* Edit Goal Sheet */}
+      <Sheet open={!!editingGoal} onOpenChange={(o) => !o && setEditingGoal(null)}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-3xl">
+          <SheetHeader className="pb-4">
+            <SheetTitle>Edit Goal</SheetTitle>
+          </SheetHeader>
+          {editingGoal && (
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Goal Name</label>
+                <Input value={editingGoal.name} maxLength={100} className="mt-2"
+                  onChange={(e) => setEditingGoal({ ...editingGoal, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Target Amount</label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{settings?.currency_symbol || '₹'}</span>
+                  <Input type="number" min="1" max="10000000" value={editingGoal.target} className="pl-8"
+                    onChange={(e) => setEditingGoal({ ...editingGoal, target: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Deadline (optional)</label>
+                <Input type="date" value={editingGoal.deadline} className="mt-2"
+                  onChange={(e) => setEditingGoal({ ...editingGoal, deadline: e.target.value })} />
+              </div>
+              <Button onClick={handleEditGoal} disabled={isUpdating} className="w-full h-12">
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
       <ConfirmDeleteDialog

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { applyGoalChange } from '@/lib/goals';
 
 export interface SavingsGoal {
   id: string;
@@ -54,6 +55,12 @@ export function useSavingsGoals() {
 
   const updateGoal = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<SavingsGoal> & { id: string }) => {
+      const goal = goals.find(g => g.id === id);
+      if (goal && (updates.target_amount !== undefined || updates.current_amount !== undefined)) {
+        const target = updates.target_amount ?? goal.target_amount;
+        const current = updates.current_amount ?? goal.current_amount;
+        updates.is_completed = Number(current) >= Number(target);
+      }
       const { data, error } = await supabase
         .from('savings_goals')
         .update(updates)
@@ -89,16 +96,14 @@ export function useSavingsGoals() {
     mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
       const goal = goals.find(g => g.id === id);
       if (!goal) throw new Error('Goal not found');
-      
-      const newAmount = goal.current_amount + amount;
-      const isCompleted = newAmount >= goal.target_amount;
+      if (amount < 0 && -amount > Number(goal.current_amount)) {
+        throw new Error('Cannot withdraw more than saved');
+      }
+      const change = applyGoalChange(goal.current_amount, goal.target_amount, amount);
       
       const { data, error } = await supabase
         .from('savings_goals')
-        .update({ 
-          current_amount: newAmount,
-          is_completed: isCompleted
-        })
+        .update(change)
         .eq('id', id)
         .eq('user_id', userId)
         .select()
@@ -120,5 +125,6 @@ export function useSavingsGoals() {
     deleteGoal: deleteGoal.mutate,
     addToGoal: addToGoal.mutate,
     isAdding: addGoal.isPending,
+    isUpdating: updateGoal.isPending,
   };
 }
