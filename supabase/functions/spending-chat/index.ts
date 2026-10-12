@@ -98,21 +98,26 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    // Only plain user/assistant text messages are accepted — no system or
-    // tool roles, so callers cannot steer the assistant's instructions.
-    for (const m of messages) {
-      if (
-        (m?.role !== 'user' && m?.role !== 'assistant') ||
-        typeof m?.content !== 'string' ||
-        m.content.length === 0 ||
-        m.content.length > 8000
-      ) {
-        return new Response(JSON.stringify({ error: 'Invalid message format' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+    // The caller may only supply a new user question. Conversation history is
+    // loaded from the user's own saved messages server-side, so fabricated
+    // assistant replies can never be injected to steer the model.
+    const question = [...messages].reverse().find((m: any) => m?.role === 'user')
+    if (!question || typeof question.content !== 'string' || question.content.length === 0 || question.content.length > 8000) {
+      return new Response(JSON.stringify({ error: 'Invalid message format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
+
+    const { data: historyRows } = await supabase
+      .from('chat_messages')
+      .select('role, content')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(40)
+    const history = (historyRows || [])
+      .filter((r: any) => (r.role === 'user' || r.role === 'assistant') && typeof r.content === 'string')
+      .map((r: any) => ({ role: r.role, content: r.content.slice(0, 8000) }))
 
     const system = await buildSystemPrompt(supabase, user.id)
 
@@ -129,7 +134,8 @@ Deno.serve(async (req) => {
         stream: true,
         messages: [
           { role: 'system', content: system },
-          ...messages,
+          ...history,
+          { role: 'user', content: question.content },
         ],
       }),
     })
