@@ -134,7 +134,8 @@ Deno.serve(async (req) => {
         stream: true,
         messages: [
           { role: 'system', content: system },
-          ...messages,
+          ...history,
+          { role: 'user', content: question.content },
         ],
       }),
     })
