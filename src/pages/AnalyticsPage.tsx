@@ -11,13 +11,14 @@ import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { filterTransactions, type TransactionTypeFilter } from '@/lib/transactionFilters';
 
 export default function AnalyticsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithCategory | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [typeFilter, setTypeFilter] = useState<TransactionTypeFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   
   const { transactions, isLoading, totals } = useTransactions(selectedMonth);
@@ -44,18 +45,10 @@ export default function AnalyticsPage() {
 
   const filtersActive = search.trim() !== '' || typeFilter !== 'all' || categoryFilter !== 'all';
 
-  const filteredTransactions = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return transactions.filter((t) => {
-      if (typeFilter !== 'all' && t.type !== typeFilter) return false;
-      if (categoryFilter !== 'all' && (t.category_id || 'uncategorized') !== categoryFilter) return false;
-      if (query) {
-        const haystack = `${t.note ?? ''} ${t.categories?.name ?? 'uncategorized'}`.toLowerCase();
-        if (!haystack.includes(query)) return false;
-      }
-      return true;
-    });
-  }, [transactions, search, typeFilter, categoryFilter]);
+  const filteredTransactions = useMemo(
+    () => filterTransactions(transactions, { search, type: typeFilter, categoryId: categoryFilter }),
+    [transactions, search, typeFilter, categoryFilter]
+  );
 
   const clearFilters = () => {
     setSearch('');
