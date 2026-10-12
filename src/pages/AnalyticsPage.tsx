@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { SpendingDonut } from '@/components/SpendingDonut';
@@ -7,13 +7,18 @@ import { useTransactions, TransactionWithCategory } from '@/hooks/useTransaction
 import { useCategories } from '@/hooks/useCategories';
 import { useSettings } from '@/hooks/useSettings';
 import { format, subMonths, addMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AnalyticsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithCategory | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   
   const { transactions, isLoading, totals } = useTransactions(selectedMonth);
   const { categories } = useCategories();
@@ -36,6 +41,27 @@ export default function AnalyticsPage() {
       ? ((categorySpending[cat.id] || 0) / Number(cat.budget_limit)) * 100 
       : 0,
   })).sort((a, b) => b.spent - a.spent);
+
+  const filtersActive = search.trim() !== '' || typeFilter !== 'all' || categoryFilter !== 'all';
+
+  const filteredTransactions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return transactions.filter((t) => {
+      if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+      if (categoryFilter !== 'all' && (t.category_id || 'uncategorized') !== categoryFilter) return false;
+      if (query) {
+        const haystack = `${t.note ?? ''} ${t.categories?.name ?? 'uncategorized'}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
+    });
+  }, [transactions, search, typeFilter, categoryFilter]);
+
+  const clearFilters = () => {
+    setSearch('');
+    setTypeFilter('all');
+    setCategoryFilter('all');
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
