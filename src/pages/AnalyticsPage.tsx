@@ -150,16 +150,101 @@ export default function AnalyticsPage() {
         {/* All Transactions */}
         <section>
           <h2 className="text-lg font-semibold text-foreground mb-3">All Transactions</h2>
+
+          {/* Search + filters */}
+          <div className="space-y-3 mb-3">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search note or category"
+                aria-label="Search transactions by note or category"
+                className="pl-10 pr-10 h-11 bg-card border-0 shadow-premium rounded-2xl"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+                <SelectTrigger
+                  aria-label="Filter by type"
+                  className="h-11 bg-card border-0 shadow-premium rounded-2xl px-4"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All types</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">Expense</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger
+                  aria-label="Filter by category"
+                  className="h-11 bg-card border-0 shadow-premium rounded-2xl px-4"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {filtersActive && (
+              <div className="flex items-center justify-between px-1">
+                <p className="text-xs text-muted-foreground">
+                  {filteredTransactions.length} of {transactions.length} shown
+                </p>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-xs font-medium text-foreground underline underline-offset-4"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="bg-card rounded-2xl shadow-premium overflow-hidden">
-            <TransactionList
-              transactions={transactions}
-              isLoading={isLoading}
-              showDate
-              onTransactionClick={(transaction) => {
-                setEditingTransaction(transaction);
-                setShowAddSheet(true);
-              }}
-            />
+            {filtersActive && !isLoading && filteredTransactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-5">
+                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Search className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground font-medium">No matching transactions</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Try a different search or clear the filters
+                </p>
+              </div>
+            ) : (
+              <TransactionList
+                transactions={filteredTransactions}
+                isLoading={isLoading}
+                showDate
+                onTransactionClick={(transaction) => {
+                  setEditingTransaction(transaction);
+                  setShowAddSheet(true);
+                }}
+              />
+            )}
           </div>
         </section>
       </main>
