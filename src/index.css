@@ -192,3 +192,14 @@
     padding-top: env(safe-area-inset-top, 20px);
   }
 }
+
+/* Globally hide the Lovable badge and its label text */
+#lovable-badge,
+[id*="lovable-badge"],
+[class*="lovable-badge"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
