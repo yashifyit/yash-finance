@@ -13,10 +13,11 @@ import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarIcon, Check, Trash2 } from 'lucide-react';
+import { AlertTriangle, CalendarIcon, Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { transactionSchema, validateInput } from '@/lib/validations';
+import { calculateExpenseBudgetWarnings } from '@/lib/budgetWarnings';
 
 interface AddTransactionSheetProps {
   open: boolean;
@@ -32,12 +33,23 @@ export function AddTransactionSheet({ open, onOpenChange, editTransaction }: Add
   const [note, setNote] = useState('');
 
   const { categories, isLoading: categoriesLoading } = useCategories();
-  const { addTransaction, updateTransaction, deleteTransaction, isAdding } = useTransactions();
+  const { transactions, isLoading: transactionsLoading, addTransaction, updateTransaction, deleteTransaction, isAdding } = useTransactions(date);
   const queryClient = useQueryClient();
   const { settings } = useSettings();
   const currencySymbol = settings?.currency_symbol || '₹';
 
   const isEditMode = !!editTransaction;
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const budgetWarnings = type === 'expense' && !transactionsLoading
+    ? calculateExpenseBudgetWarnings({
+        transactions,
+        amount: Number(amount),
+        categoryId,
+        categoryBudgetLimit: selectedCategory?.budget_limit ?? null,
+        monthlyBudgetLimit: settings?.monthly_budget ?? null,
+        excludeTransactionId: editTransaction?.id,
+      })
+    : [];
 
   // Populate form when editing
   useEffect(() => {
@@ -193,6 +205,26 @@ export function AddTransactionSheet({ open, onOpenChange, editTransaction }: Add
               />
             </div>
           </div>
+
+          {budgetWarnings.length > 0 && (
+            <div className="space-y-2" aria-live="polite">
+              {budgetWarnings.map((warning) => {
+                const label = warning.type === 'category' ? 'Category budget' : 'Monthly budget';
+                const overBy = Math.abs(warning.remaining);
+                const overText = `${currencySymbol}${overBy.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+                return (
+                  <div key={warning.type} role="status" className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm text-foreground">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                    <p>
+                      <span className="font-medium">{label} exceeded.</span>{' '}
+                      {overBy > 0 ? `${overText} over budget` : 'No budget remaining'}
+                      {' · '}{currencySymbol}0 remaining.
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Category Selector */}
           <div className="space-y-3">
