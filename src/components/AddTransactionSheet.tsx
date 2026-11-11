@@ -210,15 +210,13 @@ export function AddTransactionSheet({ open, onOpenChange, editTransaction }: Add
             <div className="space-y-2" aria-live="polite">
               {budgetWarnings.map((warning) => {
                 const label = warning.type === 'category' ? 'Category budget' : 'Monthly budget';
-                const overBy = Math.abs(warning.remaining);
-                const overText = `${currencySymbol}${overBy.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+                const remainingText = `${currencySymbol}${warning.remaining.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
                 return (
                   <div key={warning.type} role="status" className="flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-sm text-foreground">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                     <p>
                       <span className="font-medium">{label} exceeded.</span>{' '}
-                      {overBy > 0 ? `${overText} over budget` : 'No budget remaining'}
-                      {' · '}{currencySymbol}0 remaining.
+                      {remainingText} remaining.
                     </p>
                   </div>
                 );
