@@ -10,20 +10,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
+import { ErrorState } from '@/components/ErrorState';
 
 export default function ReportsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   
-  const { totals, isLoading } = useTransactions(selectedMonth);
-  const { settings } = useSettings();
+  const { totals, isLoading, isError: transactionsError, refetch: retryTransactions } = useTransactions(selectedMonth);
+  const { settings, isError: settingsError, refetch: retrySettings } = useSettings();
   const currencySymbol = settings?.currency_symbol || '₹';
   const { user } = useAuth();
   const userId = user?.id;
 
   // Get previous month data for comparison
   const previousMonth = subMonths(selectedMonth, 1);
-  const { data: previousTotals } = useQuery({
+  const { data: previousTotals, isError: previousTotalsError, refetch: retryPreviousTotals } = useQuery({
     queryKey: ['transactions-totals', userId, format(previousMonth, 'yyyy-MM')],
     queryFn: async () => {
       const start = format(startOfMonth(previousMonth), 'yyyy-MM-dd');
@@ -52,7 +53,7 @@ export default function ReportsPage() {
   });
 
   // Get last 6 months data for chart in a single query, grouped by month in code
-  const { data: monthlyData = [] } = useQuery({
+  const { data: monthlyData = [], isError: monthlyDataError, refetch: retryMonthlyData } = useQuery({
     queryKey: ['monthly-chart', userId],
     queryFn: async () => {
       const now = new Date();
@@ -140,6 +141,15 @@ export default function ReportsPage() {
       </header>
 
       <main className="px-5 space-y-6">
+        {transactionsError || settingsError || previousTotalsError || monthlyDataError ? (
+          <ErrorState onRetry={() => Promise.all([
+            retryTransactions(),
+            retrySettings(),
+            retryPreviousTotals(),
+            retryMonthlyData(),
+          ])} />
+        ) : (
+          <>
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-card rounded-2xl p-4 shadow-premium">
@@ -247,6 +257,8 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
+          </>
+        )}
       </main>
 
       <BottomNav onAddClick={() => setShowAddSheet(true)} />

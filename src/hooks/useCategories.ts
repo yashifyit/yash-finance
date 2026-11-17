@@ -18,7 +18,7 @@ export function useCategories() {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['categories', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -106,6 +106,8 @@ export function useCategories() {
   return {
     categories,
     isLoading,
+    isError,
+    refetch,
     addCategory: addCategory.mutate,
     updateCategory: updateCategory.mutate,
     deleteCategory: deleteCategory.mutate,

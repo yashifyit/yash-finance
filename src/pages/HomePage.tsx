@@ -8,6 +8,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ErrorState } from '@/components/ErrorState';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -19,8 +20,8 @@ function getGreeting(): string {
 export default function HomePage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithCategory | null>(null);
-  const { transactions, isLoading } = useTransactions();
-  const { settings } = useSettings();
+  const { transactions, isLoading, isError: transactionsError, refetch: retryTransactions } = useTransactions();
+  const { settings, isError: settingsError, refetch: retrySettings } = useSettings();
 
   const greeting = getGreeting();
   const userName = settings?.user_name;
@@ -44,6 +45,10 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="px-5 space-y-6">
+        {transactionsError || settingsError ? (
+          <ErrorState onRetry={() => Promise.all([retryTransactions(), retrySettings()])} />
+        ) : (
+          <>
         {/* Balance Card */}
         <BalanceCard />
 
@@ -72,6 +77,8 @@ export default function HomePage() {
             />
           </div>
         </section>
+          </>
+        )}
       </main>
 
       {/* Bottom Navigation */}

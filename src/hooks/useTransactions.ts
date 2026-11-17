@@ -31,7 +31,7 @@ export function useTransactions(month?: Date) {
   const userId = user?.id;
   const targetMonth = month || new Date();
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['transactions', userId, format(targetMonth, 'yyyy-MM')],
     queryFn: async () => {
       if (!userId) return [];
@@ -136,6 +136,8 @@ export function useTransactions(month?: Date) {
   return {
     transactions,
     isLoading,
+    isError,
+    refetch,
     totals,
     balance: totals.income - totals.expenses,
     addTransaction: addTransaction.mutate,

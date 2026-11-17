@@ -19,7 +19,7 @@ export function useSettings() {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading, isError, refetch } = useQuery({
     queryKey: ['settings', userId],
     queryFn: async () => {
       if (!userId) return null;
@@ -69,6 +69,8 @@ export function useSettings() {
   return {
     settings,
     isLoading,
+    isError,
+    refetch,
     updateSettings: updateSettings.mutate,
     isUpdating: updateSettings.isPending,
   };

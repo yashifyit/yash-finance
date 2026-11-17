@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { filterTransactions, type TransactionTypeFilter } from '@/lib/transactionFilters';
+import { ErrorState } from '@/components/ErrorState';
 
 export default function AnalyticsPage() {
   const [showAddSheet, setShowAddSheet] = useState(false);
@@ -21,9 +22,9 @@ export default function AnalyticsPage() {
   const [typeFilter, setTypeFilter] = useState<TransactionTypeFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   
-  const { transactions, isLoading, totals } = useTransactions(selectedMonth);
-  const { categories } = useCategories();
-  const { settings } = useSettings();
+  const { transactions, isLoading, totals, isError: transactionsError, refetch: retryTransactions } = useTransactions(selectedMonth);
+  const { categories, isError: categoriesError, refetch: retryCategories } = useCategories();
+  const { settings, isError: settingsError, refetch: retrySettings } = useSettings();
   const currencySymbol = settings?.currency_symbol || '₹';
 
   // Calculate category budget usage
@@ -89,6 +90,10 @@ export default function AnalyticsPage() {
       </header>
 
       <main className="px-5 space-y-6">
+        {transactionsError || categoriesError || settingsError ? (
+          <ErrorState onRetry={() => Promise.all([retryTransactions(), retryCategories(), retrySettings()])} />
+        ) : (
+          <>
         {/* Donut Chart */}
         <section className="bg-card rounded-2xl shadow-premium p-4">
           <h2 className="text-lg font-semibold text-foreground mb-2">Spending by Category</h2>
@@ -240,6 +245,8 @@ export default function AnalyticsPage() {
             )}
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <BottomNav onAddClick={() => {
